@@ -87,6 +87,29 @@
   .empty{text-align:center;padding:30px 16px;color:#7a847b}
   .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--chalk);padding:12px 20px;border-radius:12px;font-weight:600;font-size:14px;opacity:0;pointer-events:none;transition:.25s;z-index:50;box-shadow:var(--shadow)}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* view toggle + no-scroll list layout */
+  .vtoggle{display:inline-flex;gap:4px;background:var(--chalk-dim);padding:4px;border-radius:10px;margin-bottom:16px}
+  .vt{appearance:none;border:0;background:transparent;color:#6a766d;font:inherit;font-weight:700;font-size:13px;padding:7px 15px;border-radius:7px;cursor:pointer;transition:.13s}
+  .vt.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+  .lsec{margin-top:22px}
+  .lsec:first-child{margin-top:2px}
+  .lhead{font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#8c968d;padding-bottom:9px;border-bottom:1px solid var(--line-dark);margin-bottom:12px;display:flex;justify-content:space-between;align-items:baseline}
+  .lhead.pi{color:var(--flag-dark)}
+  .lhead .lcount{font-family:'Spline Sans Mono',monospace;font-size:11px;color:#aab2a9;letter-spacing:.04em}
+  .lcard{display:flex;align-items:stretch;gap:8px;margin-bottom:10px}
+  .lopt{flex:1;min-width:0;display:flex;align-items:center;gap:9px;background:#fff;border:1.5px solid var(--line-dark);border-radius:10px;padding:13px 14px;font:inherit;font-size:15px;font-weight:600;color:var(--ink);cursor:pointer;transition:.13s;text-align:left;min-height:50px}
+  .lopt:hover:not(:disabled){border-color:var(--green);background:#fbfdfb}
+  .lopt:disabled{color:#aeb6ae;background:#f5f3ec;cursor:default}
+  .lopt.picked{background:var(--green);border-color:var(--green);color:#fff}
+  .lseed{font-family:'Spline Sans Mono',monospace;font-size:12px;font-weight:700;color:#aab2a9;flex:0 0 auto}
+  .lopt.picked .lseed{color:rgba(255,255,255,.75)}
+  .lnm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lopt .tick{flex:0 0 auto}
+  .lvs{display:flex;align-items:center;font-size:11px;font-weight:700;color:#b3bbb2;flex:0 0 auto;text-transform:uppercase;letter-spacing:.06em}
+  .lchamp{margin-top:22px;padding:16px 18px;border:2px dashed var(--gold);border-radius:12px;background:rgba(215,169,58,.07);display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .lchamp-lbl{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#9a7a1c}
+  .lchamp-who{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:19px;color:var(--ink)}
 </style>
 </head>
 <body>
@@ -128,7 +151,7 @@ const CONFIG = {
   const players = CONFIG.players;
   const N = players.length;
   const app = document.getElementById("app");
-  const LS = { entries:"pb_entries", results:"pb_results", myname:"pb_myname", mypicks:"pb_mypicks" };
+  const LS = { entries:"pb_entries", results:"pb_results", myname:"pb_myname", mypicks:"pb_mypicks", viewmode:"pb_viewmode" };
 
   /* ---------- bracket spec (data-driven; any field size, auto play-in) ---------- */
   function seedOrder(n){ let r=[1]; while(r.length<n){ const m=r.length*2,nw=[]; for(const s of r) nw.push(s,m+1-s); r=nw; } return r; }
@@ -158,6 +181,7 @@ const CONFIG = {
 
   /* ---------- state ---------- */
   let mode="play", orgUnlocked=false;
+  let viewMode = lsGet(LS.viewmode) || "list";   // "list" (no scroll) or "bracket"
   let myName = lsGet(LS.myname) || "";
   let myPicks = lsGet(LS.mypicks) || {};
   let results = lsGet(LS.results) || { winners:{} };
@@ -213,6 +237,33 @@ const CONFIG = {
     return '<button class="slot'+(picked?" picked":"")+'" '+(disabled?"disabled":"")+' data-pick="'+mid+'" data-name="'+(name?esc(name):"")+'"><span class="seed">'+seed+'</span><span class="nm">'+(name?esc(name):"\u2014")+'</span>'+(picked?tick():"")+'</button>';
   }
 
+  /* no-scroll list layout: every matchup stacked down the page */
+  function renderList(picks,clickable){
+    const cols=[...new Set(spec.map(s=>s.col))].sort((a,b)=>a-b);
+    let html="";
+    cols.forEach(c=>{
+      const ms=spec.filter(s=>s.col===c), cap=ms[0].cap, isPI=(ms[0].id[0]==="P");
+      html+='<div class="lsec"><div class="lhead'+(isPI?" pi":"")+'"><span>'+cap+'</span><span class="lcount">'+ms.length+(ms.length>1?" matches":" match")+'</span></div>';
+      ms.forEach(mt=>{
+        const a=occ(picks,mt.a), b=occ(picks,mt.b), chosen=picks[mt.id]||null;
+        html+='<div class="lcard">'+lopt(mt.id,a,mt.a,chosen,clickable)+'<div class="lvs">vs</div>'+lopt(mt.id,b,mt.b,chosen,clickable)+'</div>';
+      });
+      html+='</div>';
+    });
+    const champ=picks[CHAMP]||null;
+    html+='<div class="lchamp"><span class="lchamp-lbl">'+(clickable==="org"?"Champion":"Your champion")+'</span><span class="lchamp-who">'+(champ?esc(champ):"\u2014")+'</span></div>';
+    return html;
+  }
+  function lopt(mid,name,src,chosen,clickable){
+    const seed=(src&&src.p!=null)?String(src.p+1).padStart(2,"0"):"";
+    const disabled=!name||!clickable, picked=name&&chosen===name;
+    return '<button class="lopt'+(picked?" picked":"")+'" '+(disabled?"disabled":"")+' data-pick="'+mid+'" data-name="'+(name?esc(name):"")+'">'+(seed?'<span class="lseed">'+seed+'</span>':'')+'<span class="lnm">'+(name?esc(name):"\u2014")+'</span>'+(picked?tick():"")+'</button>';
+  }
+  function board(picks,clickable){
+    const t='<div class="vtoggle"><button class="vt'+(viewMode==="list"?" on":"")+'" data-view="list">List</button><button class="vt'+(viewMode==="bracket"?" on":"")+'" data-view="bracket">Bracket</button></div>';
+    return t+(viewMode==="list" ? renderList(picks,clickable) : renderBracket(picks,clickable));
+  }
+
   /* ---------- scoring ---------- */
   function scoreEntry(picks){ let sc=0,co=0; const w=results.winners||{}; spec.forEach(s=>{ if(w[s.id]&&picks[s.id]===w[s.id]){ sc+=s.pts; co++; } }); return {score:sc,correct:co}; }
   function standings(){
@@ -251,7 +302,7 @@ const CONFIG = {
       '<div class="card"><h2>Fill your bracket</h2>'+
         '<div class="progress"><div class="pbar"><i style="width:'+Math.round(done/tot*100)+'%"></i></div><span class="pcount">'+done+'/'+tot+'</span></div>'+
         '<div class="muted">'+(META.games>0?"Start with the play-in column on the left, then work right. ":"")+'Later picks clear if you change an earlier matchup.</div>'+
-        renderBracket(myPicks,"play")+codeBlock+'</div>';
+        board(myPicks,"play")+codeBlock+'</div>';
   }
 
   function viewOrgGate(){
@@ -281,7 +332,7 @@ const CONFIG = {
         '<div class="divider"></div>'+list+'</div>'+
       '<div class="card"><div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><h2 style="margin:0">Enter results</h2>'+(w[CHAMP]?'<span class="pill pill-final">\u2605 Champion: '+esc(w[CHAMP])+'</span>':"")+'</div>'+
         '<p class="lead">Tap the actual winner of each match as the putting plays out'+(META.games>0?" \u2014 start with the play-in":"")+'. Standings re-score instantly.</p>'+
-        renderBracket(results.winners,"org")+
+        board(results.winners,"org")+
         '<div style="margin-top:12px"><button class="btn btn-ghost btn-sm" id="clearResults">Clear results</button></div></div>'+
       '<div class="card"><h2>Leaderboard</h2>'+lb+
         '<div class="muted" style="margin-top:14px">Scoring: '+(CONFIG.weighted?"play-in 1, Round of "+META.B+" 1, quarters 2, semis 4, final 8":"flat \u2014 1 point per correct pick")+'.</div>'+
@@ -306,11 +357,12 @@ const CONFIG = {
 
   function bind(){
     const gear=document.getElementById("gear"); if(gear) gear.onclick=()=>{ mode="org"; paint(); };
+    app.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{ viewMode=b.dataset.view; lsSet(LS.viewmode,viewMode); paint(); });
 
     if(mode==="play"){
       const nm=document.getElementById("pname");
       if(nm) nm.oninput=e=>{ myName=e.target.value; lsSet(LS.myname,myName); const ready=myName.trim()&&pickCount(myPicks)===total(); if(ready!==!!document.getElementById("mycode")) paint(); };
-      app.querySelectorAll('.slot[data-pick]').forEach(s=>s.onclick=()=>{ const id=s.dataset.pick,n=s.dataset.name; if(!n) return; myPicks[id]=n; validate(myPicks); lsSet(LS.mypicks,myPicks); paint(); });
+      app.querySelectorAll('[data-pick]').forEach(s=>s.onclick=()=>{ const id=s.dataset.pick,n=s.dataset.name; if(!n) return; myPicks[id]=n; validate(myPicks); lsSet(LS.mypicks,myPicks); paint(); });
       const cc=document.getElementById("copyCode"); if(cc) cc.onclick=()=>{ copy(document.getElementById("mycode").textContent); toast("Code copied \u2014 send it in!"); };
       const so=document.getElementById("startOver"); if(so) so.onclick=()=>{ myPicks={}; lsSet(LS.mypicks,myPicks); paint(); };
     }
@@ -325,7 +377,7 @@ const CONFIG = {
       const ca=document.getElementById("copyAll"); if(ca) ca.onclick=()=>{ copy(entries.map(e=>encodeEntry(e.name,e.picks)).join("\n")); toast("All codes copied"); };
       const cl=document.getElementById("clearAll"); if(cl) cl.onclick=()=>{ if(confirm("Remove all loaded brackets?")){ entries=[]; lsSet(LS.entries,entries); paint(); } };
       app.querySelectorAll('[data-del]').forEach(x=>x.onclick=()=>{ entries.splice(+x.dataset.del,1); lsSet(LS.entries,entries); paint(); });
-      app.querySelectorAll('.slot[data-pick]').forEach(s=>s.onclick=()=>{ const id=s.dataset.pick,n=s.dataset.name; if(!n) return; results.winners[id]=n; validate(results.winners); lsSet(LS.results,results); paint(); });
+      app.querySelectorAll('[data-pick]').forEach(s=>s.onclick=()=>{ const id=s.dataset.pick,n=s.dataset.name; if(!n) return; results.winners[id]=n; validate(results.winners); lsSet(LS.results,results); paint(); });
       const cr=document.getElementById("clearResults"); if(cr) cr.onclick=()=>{ if(confirm("Clear all entered results?")){ results={winners:{}}; lsSet(LS.results,results); paint(); } };
       const bp=document.getElementById("backPlay2"); if(bp) bp.onclick=()=>{ mode="play"; paint(); };
     }
