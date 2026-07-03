@@ -44,7 +44,7 @@
   .pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;letter-spacing:.03em}
   .pill-open{background:rgba(27,94,63,.12);color:var(--green)}
   .pill-final{background:rgba(215,169,58,.18);color:#8a6a12}
-  .bracket-shell{overflow-x:auto;overflow-y:hidden;padding:6px 2px 16px;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:rgba(21,32,26,.32) transparent}
+  .bracket-shell{overflow-x:auto;padding:6px 2px 16px;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:rgba(21,32,26,.32) transparent}
   .bracket-shell::-webkit-scrollbar{height:11px}
   .bracket-shell::-webkit-scrollbar-track{background:rgba(21,32,26,.06);border-radius:8px}
   .bracket-shell::-webkit-scrollbar-thumb{background:rgba(21,32,26,.26);border-radius:8px}
@@ -201,10 +201,10 @@ const CONFIG = {
         const a=occ(picks,mt.a), b=occ(picks,mt.b), chosen=picks[mt.id]||null;
         inner+='<div class="match" style="flex:1 1 '+unit+'px">'+slot(mt.id,a,mt.a,chosen,clickable)+slot(mt.id,b,mt.b,chosen,clickable)+'</div>';
       });
-      html+='<div class="round'+(isPI?" playin":"")+'" style="height:'+shellH+'px"><div class="round-cap">'+cap+'</div>'+inner+'</div>';
+      html+='<div class="round'+(isPI?" playin":"")+'" style="min-height:'+shellH+'px"><div class="round-cap">'+cap+'</div>'+inner+'</div>';
     });
     const champ=picks[CHAMP]||null;
-    html+='<div class="round champ-col" style="height:'+shellH+'px"><div class="round-cap">Champion</div><div class="champ-box"><div class="lbl">'+(clickable==="org"?"Actual winner":"Your pick")+'</div><div class="who">'+(champ?esc(champ):"\u2014")+'</div></div></div>';
+    html+='<div class="round champ-col" style="min-height:'+shellH+'px"><div class="round-cap">Champion</div><div class="champ-box"><div class="lbl">'+(clickable==="org"?"Actual winner":"Your pick")+'</div><div class="who">'+(champ?esc(champ):"\u2014")+'</div></div></div>';
     return '<div class="bracket-shell"><div class="bracket">'+html+'</div></div>';
   }
   function slot(mid,name,src,chosen,clickable){
