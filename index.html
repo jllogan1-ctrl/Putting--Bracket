@@ -44,8 +44,12 @@
   .pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;letter-spacing:.03em}
   .pill-open{background:rgba(27,94,63,.12);color:var(--green)}
   .pill-final{background:rgba(215,169,58,.18);color:#8a6a12}
-  .bracket-shell{overflow-x:auto;padding:6px 2px 14px;-webkit-overflow-scrolling:touch}
-  .bracket{display:flex;gap:26px;align-items:stretch;min-width:min-content}
+  .bracket-shell{overflow-x:auto;overflow-y:hidden;padding:6px 2px 16px;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:rgba(21,32,26,.32) transparent}
+  .bracket-shell::-webkit-scrollbar{height:11px}
+  .bracket-shell::-webkit-scrollbar-track{background:rgba(21,32,26,.06);border-radius:8px}
+  .bracket-shell::-webkit-scrollbar-thumb{background:rgba(21,32,26,.26);border-radius:8px}
+  .bracket-shell::-webkit-scrollbar-thumb:hover{background:rgba(21,32,26,.42)}
+  .bracket{display:flex;gap:26px;align-items:stretch;justify-content:flex-start;width:max-content}
   .round{display:flex;flex-direction:column;justify-content:space-around;min-width:168px}
   .round.playin{min-width:162px;border-right:1px dashed var(--line-dark);padding-right:24px;margin-right:-2px}
   .round-cap{font-size:11px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:#8c968d;text-align:center;margin-bottom:10px;height:14px}
@@ -285,7 +289,20 @@ const CONFIG = {
   }
 
   /* ---------- paint + events ---------- */
-  function paint(){ app.innerHTML = mode==="org" ? (orgUnlocked?viewOrg():viewOrgGate()) : viewPlay(); bind(); }
+  function paint(){ app.innerHTML = mode==="org" ? (orgUnlocked?viewOrg():viewOrgGate()) : viewPlay(); bind(); wireBracket(); }
+
+  let bracketScroll=0;
+  function wireBracket(){
+    const sh=app.querySelector('.bracket-shell'); if(!sh) return;
+    sh.scrollLeft=bracketScroll;                       // keep your place across re-renders
+    sh.addEventListener('scroll',()=>{ bracketScroll=sh.scrollLeft; });
+    sh.addEventListener('wheel',e=>{                   // let a normal mouse wheel scroll sideways
+      if(Math.abs(e.deltaX)>=Math.abs(e.deltaY)) return;
+      const canLeft=sh.scrollLeft>0, canRight=sh.scrollLeft<sh.scrollWidth-sh.clientWidth-1;
+      if((e.deltaY<0&&canLeft)||(e.deltaY>0&&canRight)){ sh.scrollLeft+=e.deltaY; e.preventDefault(); }
+    },{passive:false});
+  }
+
 
   function bind(){
     const gear=document.getElementById("gear"); if(gear) gear.onclick=()=>{ mode="org"; paint(); };
