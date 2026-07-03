@@ -106,6 +106,7 @@ const CONFIG = {
   weighted: true,          // true = play-in 1, R16 1, QF 2, SF 4, Final 8 ; false = 1 per correct pick
   passcode: "putt2026",    // <-- change this
   organizer:"the organizer",
+  smsNumber:"3302322107",  // friends tap "Text my bracket" and it opens a message to this number; set "" to hide
   players: [
     "Jacob",    "Wesley",   "Nora",      "Lucas",     // seeds 1-6: BYES into the Round of 16
     "Salem",    "Zion",                               //   (Jacob, Wesley, Nora, Lucas, Salem, Zion)
@@ -168,11 +169,13 @@ const CONFIG = {
   function pickCount(p){ return spec.filter(s=>p[s.id]).length; }
   function matchOrder(){ return spec.map(s=>s.id); }
 
-  /* ---------- code encode/decode ---------- */
-  function encodeEntry(name,picks){ const arr=matchOrder().map(id=>players.indexOf(picks[id])); return "PUTT-"+btoa(unescape(encodeURIComponent(JSON.stringify({n:name,p:arr})))); }
+  /* ---------- code encode/decode (URL-safe base64 so it survives text/SMS/links) ---------- */
+  function b64u(s){ return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+  function b64uDec(s){ s=s.replace(/-/g,'+').replace(/_/g,'/'); while(s.length%4) s+='='; return atob(s); }
+  function encodeEntry(name,picks){ const arr=matchOrder().map(id=>players.indexOf(picks[id])); return "PUTT-"+b64u(unescape(encodeURIComponent(JSON.stringify({n:name,p:arr})))); }
   function decodeEntry(code){
     code=(code||"").trim(); if(code.startsWith("PUTT-")) code=code.slice(5);
-    const obj=JSON.parse(decodeURIComponent(escape(atob(code)))), order=matchOrder(), picks={};
+    const obj=JSON.parse(decodeURIComponent(escape(b64uDec(code)))), order=matchOrder(), picks={};
     (obj.p||[]).forEach((idx,i)=>{ if(players[idx]!=null && order[i]) picks[order[i]]=players[idx]; });
     validate(picks);
     return { name:String(obj.n||"Unnamed").slice(0,40), picks };
@@ -229,10 +232,14 @@ const CONFIG = {
     let codeBlock="";
     if(ready){
       const code=encodeEntry(myName.trim(),myPicks);
-      codeBlock='<div class="divider"></div><h2>Your code is ready</h2>'+
-        '<p class="lead">Send this code to '+esc(CONFIG.organizer)+' \u2014 a text or email is perfect. It captures every pick above. Change a pick and the code updates automatically.</p>'+
+      const smsHref = CONFIG.smsNumber ? "sms:"+CONFIG.smsNumber+"?&body="+encodeURIComponent(myName.trim()+"'s putting bracket: "+code) : "";
+      codeBlock='<div class="divider"></div><h2>Last step \u2014 send your bracket</h2>'+
+        '<p class="lead">'+(CONFIG.smsNumber?'Tap <b>Text my bracket</b> and your phone opens a message that\'s already filled in \u2014 just hit send. Prefer email? Copy the code instead.':'Send this code to '+esc(CONFIG.organizer)+' \u2014 a text or email is perfect.')+' Change a pick and the code updates automatically.</p>'+
         '<div class="codebox"><div class="code" id="mycode">'+code+'</div></div>'+
-        '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px"><button class="btn btn-flag" id="copyCode">'+flagSVG(15)+' Copy my code</button><button class="btn btn-ghost btn-sm" id="startOver">Start over</button></div>';
+        '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">'+
+        (CONFIG.smsNumber?'<a class="btn btn-flag" href="'+smsHref+'">'+flagSVG(15)+' Text my bracket</a>':'')+
+        '<button class="btn '+(CONFIG.smsNumber?'btn-ghost':'btn-flag')+'" id="copyCode">Copy my code</button>'+
+        '<button class="btn btn-ghost btn-sm" id="startOver">Start over</button></div>';
     }
     return header()+
       '<div class="card"><h2>'+esc(CONFIG.title)+'</h2><p class="lead">'+fieldLine()+'</p>'+
@@ -308,10 +315,11 @@ const CONFIG = {
   }
 
   function loadCodes(){
-    const raw=(document.getElementById("codes").value||"").split("\n").map(s=>s.trim()).filter(Boolean);
+    const raw=(document.getElementById("codes").value||"");
+    const tokens=raw.match(/PUTT-[A-Za-z0-9\-_]+/g)||[];
     let ok=0,bad=0;
-    raw.forEach(c=>{ try{ const e=decodeEntry(c); const i=entries.findIndex(x=>x.name.toLowerCase()===e.name.toLowerCase()); if(i>=0) entries[i]=e; else entries.push(e); ok++; }catch(err){ bad++; } });
-    lsSet(LS.entries,entries); toast(ok+" loaded"+(bad?", "+bad+" couldn't be read":"")); paint();
+    tokens.forEach(c=>{ try{ const e=decodeEntry(c); const i=entries.findIndex(x=>x.name.toLowerCase()===e.name.toLowerCase()); if(i>=0) entries[i]=e; else entries.push(e); ok++; }catch(err){ bad++; } });
+    lsSet(LS.entries,entries); toast(ok?(ok+" loaded"+(bad?", "+bad+" unreadable":"")):"No codes found in that text"); paint();
   }
 
   function copy(t){ if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(t).catch(()=>fc(t)); } else fc(t); }
