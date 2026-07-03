@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Putting Bracket Challenge</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600&family=Spline+Sans+Mono:wght@500;700&display=swap');
+  :root{
+    --fairway:#10402F;--green:#1B5E3F;--green-soft:#21724C;--chalk:#F4F0E4;--chalk-dim:#E7E1CF;
+    --ink:#15201A;--flag:#DD4327;--flag-dark:#B8331B;--gold:#D7A93A;
+    --line:rgba(244,240,228,.16);--line-dark:rgba(21,32,26,.12);
+    --shadow:0 1px 0 rgba(0,0,0,.04),0 8px 24px -12px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:'Inter',system-ui,sans-serif;color:var(--chalk);
+    background:radial-gradient(120% 80% at 50% -10%,#1c5a40 0%,var(--fairway) 55%,#0c3325 100%);
+    min-height:100vh;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1180px;margin:0 auto;padding:22px 16px 90px}
+  .mast{display:flex;align-items:center;gap:14px;padding:6px 2px 18px}
+  .titles h1{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:clamp(24px,5.4vw,38px);line-height:.98;letter-spacing:-.02em;margin:0}
+  .titles .sub{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:rgba(244,240,228,.62);margin-top:6px;font-weight:600}
+  .gear{margin-left:auto;background:rgba(0,0,0,.18);border:1px solid var(--line);color:rgba(244,240,228,.7);
+    width:40px;height:40px;border-radius:11px;cursor:pointer;font-size:17px;display:flex;align-items:center;justify-content:center;transition:.15s;flex:0 0 auto}
+  .gear:hover{color:var(--chalk);background:rgba(0,0,0,.3)}
+  .card{background:var(--chalk);color:var(--ink);border-radius:16px;padding:22px;box-shadow:var(--shadow)}
+  .card+.card{margin-top:16px}
+  .card h2{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:22px;letter-spacing:-.01em;margin:0 0 4px}
+  .card p.lead{margin:0 0 18px;color:#4a564e;font-size:14.5px;line-height:1.5}
+  label.fld{display:block;font-size:12.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#6a766d;margin:0 0 7px}
+  input[type=text],input[type=password],textarea{width:100%;font:inherit;font-size:15px;color:var(--ink);background:#fff;border:1.5px solid var(--line-dark);border-radius:10px;padding:11px 13px;transition:.15s}
+  input:focus,textarea:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(27,94,63,.14)}
+  textarea{resize:vertical;min-height:96px;line-height:1.55;font-family:'Spline Sans Mono',monospace;font-size:13px}
+  .btn{appearance:none;border:0;cursor:pointer;font:inherit;font-weight:700;font-size:15px;padding:12px 20px;border-radius:11px;transition:.15s;display:inline-flex;align-items:center;gap:8px}
+  .btn-primary{background:var(--green);color:#fff}.btn-primary:hover{background:var(--green-soft)}
+  .btn-flag{background:var(--flag);color:#fff}.btn-flag:hover{background:var(--flag-dark)}
+  .btn-ghost{background:transparent;color:var(--green);box-shadow:inset 0 0 0 1.5px var(--green)}.btn-ghost:hover{background:rgba(27,94,63,.07)}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .btn-sm{padding:8px 14px;font-size:13.5px;border-radius:9px}
+  .note{font-size:13px;color:#6a766d;line-height:1.55}
+  .muted{color:#7a847b;font-size:13.5px}
+  .divider{height:1px;background:var(--line-dark);margin:20px 0}
+  .pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;letter-spacing:.03em}
+  .pill-open{background:rgba(27,94,63,.12);color:var(--green)}
+  .pill-final{background:rgba(215,169,58,.18);color:#8a6a12}
+  .bracket-shell{overflow-x:auto;padding:6px 2px 14px;-webkit-overflow-scrolling:touch}
+  .bracket{display:flex;gap:26px;align-items:stretch;min-width:min-content}
+  .round{display:flex;flex-direction:column;justify-content:space-around;min-width:168px}
+  .round.playin{min-width:162px;border-right:1px dashed var(--line-dark);padding-right:24px;margin-right:-2px}
+  .round-cap{font-size:11px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:#8c968d;text-align:center;margin-bottom:10px;height:14px}
+  .round.playin .round-cap{color:var(--flag-dark)}
+  .match{display:flex;flex-direction:column;gap:4px;padding:5px 0}
+  .slot{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:#fff;border:1.5px solid var(--line-dark);border-radius:9px;padding:9px 11px;font:inherit;font-size:13.5px;font-weight:500;color:var(--ink);cursor:pointer;transition:.13s;line-height:1.15}
+  .slot:hover:not(:disabled){border-color:var(--green);background:#fbfdfb}
+  .slot:disabled{cursor:default;color:#aeb6ae;background:#f5f3ec}
+  .slot .seed{font-family:'Spline Sans Mono',monospace;font-size:11px;font-weight:700;color:#aab2a9;flex:0 0 auto;width:18px}
+  .slot .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .slot.picked{background:var(--green);border-color:var(--green);color:#fff;font-weight:700}
+  .slot.picked .seed{color:rgba(255,255,255,.7)}
+  .slot .tick{margin-left:auto;flex:0 0 auto}
+  .champ-col{justify-content:center;min-width:184px}
+  .champ-box{border:2px dashed var(--gold);border-radius:12px;padding:16px 14px;text-align:center;background:rgba(215,169,58,.07)}
+  .champ-box .lbl{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#9a7a1c}
+  .champ-box .who{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:18px;margin-top:6px;color:var(--ink);min-height:22px}
+  .progress{display:flex;align-items:center;gap:12px;margin:16px 0 6px}
+  .pbar{flex:1;height:8px;background:var(--chalk-dim);border-radius:999px;overflow:hidden}
+  .pbar>i{display:block;height:100%;background:var(--green);transition:width .25s}
+  .pcount{font-family:'Spline Sans Mono',monospace;font-size:13px;font-weight:700;color:#6a766d}
+  .codebox{background:#0e2c20;border-radius:12px;padding:16px;margin-top:4px}
+  .codebox .code{font-family:'Spline Sans Mono',monospace;font-size:13px;color:#bfe8cf;word-break:break-all;line-height:1.5;background:rgba(0,0,0,.25);border-radius:8px;padding:12px;border:1px solid rgba(244,240,228,.12)}
+  .lb{width:100%;border-collapse:collapse}
+  .lb th{text-align:left;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8c968d;font-weight:700;padding:0 12px 10px}
+  .lb th.num,.lb td.num{text-align:right;font-family:'Spline Sans Mono',monospace}
+  .lb td{padding:13px 12px;border-top:1px solid var(--line-dark);font-size:14.5px}
+  .lb tr td:first-child{font-family:'Spline Sans Mono',monospace;font-weight:700;color:#9aa39a;width:30px}
+  .lb .who{font-weight:600}.lb .pts{font-weight:800;font-size:16px}
+  .lb tr.lead td{background:rgba(215,169,58,.10)}.lb tr.lead td:first-child{color:var(--gold)}
+  .chip{display:inline-block;font-family:'Spline Sans Mono',monospace;font-size:12px;background:rgba(27,94,63,.1);color:var(--green);padding:2px 7px;border-radius:6px;margin-left:8px}
+  .entry-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line-dark);font-size:14px}
+  .entry-row:first-child{border-top:0}
+  .entry-row .x{margin-left:auto;background:none;border:0;color:var(--flag-dark);cursor:pointer;font-weight:700;font-size:13px}
+  .empty{text-align:center;padding:30px 16px;color:#7a847b}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--chalk);padding:12px 20px;border-radius:12px;font-weight:600;font-size:14px;opacity:0;pointer-events:none;transition:.25s;z-index:50;box-shadow:var(--shadow)}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   EDIT THIS BLOCK — everything you'd want to change is here.
+   ------------------------------------------------------------
+   List players in SEED ORDER, best to worst. The app auto-builds
+   a play-in down to the nearest bracket size:
+     - 26 players -> top 6 seeds get a bye, seeds 7-26 play a
+       10-match play-in, survivors form the Round of 16.
+     - Pairings are highest vs lowest: 7v26, 8v25, ... 16v17.
+   You can use any count; it seeds and builds automatically.
+   passcode: the Organizer passcode (keeps friends out of setup/results).
+   ============================================================ */
+const CONFIG = {
+  title:    "Putting Bracket Challenge",
+  weighted: true,          // true = play-in 1, R16 1, QF 2, SF 4, Final 8 ; false = 1 per correct pick
+  passcode: "putt2026",    // <-- change this
+  organizer:"the organizer",
+  players: [
+    "Jacob",    "Wesley",   "Nora",      "Lucas",     // seeds 1-6: BYES into the Round of 16
+    "Salem",    "Zion",                               //   (Jacob, Wesley, Nora, Lucas, Salem, Zion)
+    "Scott",    "Megan",    "Deborah",   "Anthony",   // seeds 7-26: play-in
+    "Matt",     "James",    "Ezra",      "Genevieve",
+    "Justin",   "Campbell", "Ashley",    "Alicia",
+    "Tom",      "Leah",     "Meadow",    "Chad",
+    "Holly",    "Brandon",  "Patrick",   "Cortney"
+  ]
+};
+/* ====================== end edit block ====================== */
+
+(function(){
+  "use strict";
+  const players = CONFIG.players;
+  const N = players.length;
+  const app = document.getElementById("app");
+  const LS = { entries:"pb_entries", results:"pb_results", myname:"pb_myname", mypicks:"pb_mypicks" };
+
+  /* ---------- bracket spec (data-driven; any field size, auto play-in) ---------- */
+  function seedOrder(n){ let r=[1]; while(r.length<n){ const m=r.length*2,nw=[]; for(const s of r) nw.push(s,m+1-s); r=nw; } return r; }
+  function pow2below(n){ let b=1; while(b*2<n) b*=2; return b; }
+  let META={B:0,byes:0,games:0,isP:false};
+  function buildSpec(){
+    if(N<2) return null;
+    const w=CONFIG.weighted, spec=[], isP=(N&(N-1))===0, B=isP?N:pow2below(N), rounds=Math.round(Math.log2(B));
+    if(rounds<1) return null;
+    let byes=0,games=0;
+    const cap=r=>{const e=rounds-r;return e===0?"Final":e===1?"Semifinals":e===2?"Quarterfinals":e===3?"Round of 16":e===4?"Round of 32":"Round "+r;};
+    if(!isP){
+      byes=2*B-N; games=N-B;
+      for(let i=0;i<games;i++){ const hi=byes+1+i, lo=N-i; spec.push({id:"P"+i,col:0,cap:"Play-In",a:{p:hi-1},b:{p:lo-1},pts:1}); }
+    }
+    const S=seedOrder(B), off=isP?0:1;
+    const src=s=> s<=byes ? {p:s-1} : (isP ? {p:s-1} : {w:"P"+(s-byes-1)});
+    for(let m=0;m<B/2;m++) spec.push({id:"R1M"+m,col:off,cap:cap(1),a:src(S[2*m]),b:src(S[2*m+1]),pts:w?1:1});
+    for(let r=2;r<=rounds;r++){ const c=B/Math.pow(2,r);
+      for(let m=0;m<c;m++) spec.push({id:"R"+r+"M"+m,col:off+r-1,cap:cap(r),a:{w:"R"+(r-1)+"M"+(2*m)},b:{w:"R"+(r-1)+"M"+(2*m+1)},pts:w?Math.pow(2,r-1):1});
+    }
+    META={B:B,byes:byes,games:games,isP:isP};
+    return spec;
+  }
+  const spec = buildSpec();
+  const CHAMP = spec ? spec.reduce((b,s)=> s.col>b.col?s:b, spec[0]).id : null;
+
+  /* ---------- state ---------- */
+  let mode="play", orgUnlocked=false;
+  let myName = lsGet(LS.myname) || "";
+  let myPicks = lsGet(LS.mypicks) || {};
+  let results = lsGet(LS.results) || { winners:{} };
+  let entries = lsGet(LS.entries) || [];
+
+  /* ---------- helpers ---------- */
+  function lsGet(k){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):null; }catch(e){ return null; } }
+  function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+  function esc(s){ return (s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
+  function occ(picks,src){ if(src.p!=null) return players[src.p]||null; if(src.w) return picks[src.w]||null; return null; }
+  function validate(picks){ spec.forEach(s=>{ const a=occ(picks,s.a),b=occ(picks,s.b); if(picks[s.id]&&picks[s.id]!==a&&picks[s.id]!==b) delete picks[s.id]; }); return picks; }
+  function total(){ return spec.length; }
+  function pickCount(p){ return spec.filter(s=>p[s.id]).length; }
+  function matchOrder(){ return spec.map(s=>s.id); }
+
+  /* ---------- code encode/decode ---------- */
+  function encodeEntry(name,picks){ const arr=matchOrder().map(id=>players.indexOf(picks[id])); return "PUTT-"+btoa(unescape(encodeURIComponent(JSON.stringify({n:name,p:arr})))); }
+  function decodeEntry(code){
+    code=(code||"").trim(); if(code.startsWith("PUTT-")) code=code.slice(5);
+    const obj=JSON.parse(decodeURIComponent(escape(atob(code)))), order=matchOrder(), picks={};
+    (obj.p||[]).forEach((idx,i)=>{ if(players[idx]!=null && order[i]) picks[order[i]]=players[idx]; });
+    validate(picks);
+    return { name:String(obj.n||"Unnamed").slice(0,40), picks };
+  }
+
+  /* ---------- renderer ---------- */
+  function tick(){ return '<svg class="tick" width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M13 4 6.5 11.5 3 8" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>'; }
+  function flagSVG(s){ return '<svg width="'+s+'" height="'+s+'" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M9 4v24" stroke="#F4F0E4" stroke-width="2.4" stroke-linecap="round"/><path d="M9 5c5-3 9 3 14 0v9c-5 3-9-3-14 0V5Z" fill="#DD4327"/><circle cx="9" cy="28.5" r="2.4" fill="#F4F0E4"/></svg>'; }
+
+  function renderBracket(picks,clickable){
+    const cols=[...new Set(spec.map(s=>s.col))].sort((a,b)=>a-b);
+    const maxM=Math.max.apply(null,cols.map(c=>spec.filter(s=>s.col===c).length));
+    const unit=70, shellH=maxM*unit;
+    let html="";
+    cols.forEach(c=>{
+      const ms=spec.filter(s=>s.col===c), cap=ms[0].cap, isPI=(ms[0].id[0]==="P");
+      let inner="";
+      ms.forEach(mt=>{
+        const a=occ(picks,mt.a), b=occ(picks,mt.b), chosen=picks[mt.id]||null;
+        inner+='<div class="match" style="flex:1 1 '+unit+'px">'+slot(mt.id,a,mt.a,chosen,clickable)+slot(mt.id,b,mt.b,chosen,clickable)+'</div>';
+      });
+      html+='<div class="round'+(isPI?" playin":"")+'" style="height:'+shellH+'px"><div class="round-cap">'+cap+'</div>'+inner+'</div>';
+    });
+    const champ=picks[CHAMP]||null;
+    html+='<div class="round champ-col" style="height:'+shellH+'px"><div class="round-cap">Champion</div><div class="champ-box"><div class="lbl">'+(clickable==="org"?"Actual winner":"Your pick")+'</div><div class="who">'+(champ?esc(champ):"\u2014")+'</div></div></div>';
+    return '<div class="bracket-shell"><div class="bracket">'+html+'</div></div>';
+  }
+  function slot(mid,name,src,chosen,clickable){
+    const seed=(src&&src.p!=null)?String(src.p+1).padStart(2,"0"):"";
+    const disabled=!name||!clickable, picked=name&&chosen===name;
+    return '<button class="slot'+(picked?" picked":"")+'" '+(disabled?"disabled":"")+' data-pick="'+mid+'" data-name="'+(name?esc(name):"")+'"><span class="seed">'+seed+'</span><span class="nm">'+(name?esc(name):"\u2014")+'</span>'+(picked?tick():"")+'</button>';
+  }
+
+  /* ---------- scoring ---------- */
+  function scoreEntry(picks){ let sc=0,co=0; const w=results.winners||{}; spec.forEach(s=>{ if(w[s.id]&&picks[s.id]===w[s.id]){ sc+=s.pts; co++; } }); return {score:sc,correct:co}; }
+  function standings(){
+    const w=results.winners||{};
+    const rows=entries.map(e=>{ const s=scoreEntry(e.picks); return {name:e.name,picks:e.picks,score:s.score,correct:s.correct}; });
+    rows.sort((a,b)=> b.score-a.score || b.correct-a.correct || ((b.picks[CHAMP]===w[CHAMP])-(a.picks[CHAMP]===w[CHAMP])) || a.name.localeCompare(b.name));
+    return rows;
+  }
+
+  /* ---------- views ---------- */
+  function header(){ return '<div class="mast"><span>'+flagSVG(40)+'</span><div class="titles"><h1>'+esc(CONFIG.title)+'</h1><div class="sub">Bracket Challenge \u00b7 Pick \u00b7 Send \u00b7 Win</div></div><button class="gear" id="gear" title="Organizer">\u2699</button></div>'; }
+
+  function fieldLine(){
+    if(META.games>0) return N+" putters. The top "+META.byes+" seeds get a bye into the Round of "+META.B+"; the other "+(2*META.games)+" fight through a "+META.games+"-match play-in on the left. Pick every matchup and you'll get a code to send in \u2014 no account, nothing to install.";
+    return N+" putters, straight bracket to the champion. Pick every matchup and you'll get a code to send in \u2014 no account, nothing to install.";
+  }
+
+  function viewPlay(){
+    if(!spec) return header()+'<div class="card"><h2>Need at least 2 players</h2><p class="lead">Add players to the list at the top of the file.</p></div>';
+    const tot=total(), done=pickCount(myPicks), ready=myName.trim()&&done===tot;
+    let codeBlock="";
+    if(ready){
+      const code=encodeEntry(myName.trim(),myPicks);
+      codeBlock='<div class="divider"></div><h2>Your code is ready</h2>'+
+        '<p class="lead">Send this code to '+esc(CONFIG.organizer)+' \u2014 a text or email is perfect. It captures every pick above. Change a pick and the code updates automatically.</p>'+
+        '<div class="codebox"><div class="code" id="mycode">'+code+'</div></div>'+
+        '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px"><button class="btn btn-flag" id="copyCode">'+flagSVG(15)+' Copy my code</button><button class="btn btn-ghost btn-sm" id="startOver">Start over</button></div>';
+    }
+    return header()+
+      '<div class="card"><h2>'+esc(CONFIG.title)+'</h2><p class="lead">'+fieldLine()+'</p>'+
+        '<label class="fld" for="pname">Your name</label><input id="pname" type="text" placeholder="e.g. Jordan" autocomplete="off" value="'+esc(myName)+'"/></div>'+
+      '<div class="card"><h2>Fill your bracket</h2>'+
+        '<div class="progress"><div class="pbar"><i style="width:'+Math.round(done/tot*100)+'%"></i></div><span class="pcount">'+done+'/'+tot+'</span></div>'+
+        '<div class="muted">'+(META.games>0?"Start with the play-in column on the left, then work right. ":"")+'Later picks clear if you change an earlier matchup.</div>'+
+        renderBracket(myPicks,"play")+codeBlock+'</div>';
+  }
+
+  function viewOrgGate(){
+    return header()+'<div class="card"><h2>Organizer access</h2><p class="lead">Collecting codes, entering results, and the leaderboard live here behind your passcode. Friends don\'t have it, so they only ever see the picking screen.</p>'+
+      '<label class="fld" for="oc">Passcode</label><input id="oc" type="password" placeholder="\u2022\u2022\u2022\u2022" autocomplete="off"/>'+
+      '<div class="divider"></div><button class="btn btn-primary" id="ocBtn">Unlock</button><div class="muted" id="ocErr" style="margin-top:10px;color:var(--flag-dark)"></div>'+
+      '<div style="margin-top:14px"><button class="btn btn-ghost btn-sm" id="backPlay">Back to picking</button></div></div>';
+  }
+
+  function viewOrg(){
+    const rows=standings(), anyResults=Object.keys(results.winners||{}).length>0, w=results.winners||{};
+    const list = entries.length? entries.map((e,i)=>'<div class="entry-row"><span class="who">'+esc(e.name)+'</span><span class="muted">'+pickCount(e.picks)+'/'+total()+' picks</span><button class="x" data-del="'+i+'">remove</button></div>').join("")
+      : '<div class="empty">No brackets loaded yet. Paste the codes your friends send you below.</div>';
+    let lb="";
+    if(entries.length){
+      lb=rows.map((e,i)=>{ const lead=anyResults&&i===0&&e.score>0, cp=e.picks[CHAMP], cright=anyResults&&w[CHAMP]&&cp===w[CHAMP];
+        return '<tr class="'+(lead?"lead":"")+'"><td>'+(i+1)+'</td><td><span class="who">'+esc(e.name)+'</span>'+(lead?' \ud83d\udc51':"")+(cp?'<span class="chip">\ud83c\udfc6 '+esc(cp)+(cright?" \u2713":"")+'</span>':"")+'</td><td class="num">'+e.correct+'</td><td class="num pts">'+e.score+'</td></tr>';
+      }).join("");
+      lb='<table class="lb"><thead><tr><th></th><th>Player</th><th class="num">Correct</th><th class="num">Points</th></tr></thead><tbody>'+lb+'</tbody></table>';
+    } else lb='<div class="empty">Load some brackets to see standings.</div>';
+    return header()+
+      '<div class="card"><div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><h2 style="margin:0">Collected brackets</h2><span class="pill pill-open">\u25cf '+entries.length+' loaded</span></div>'+
+        '<p class="lead">Paste the codes friends sent you \u2014 one per line. Same name re-pasted updates that person.</p>'+
+        '<textarea id="codes" placeholder="PUTT-xxxxx&#10;PUTT-yyyyy"></textarea>'+
+        '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px"><button class="btn btn-primary" id="loadCodes">Load codes</button>'+
+        (entries.length?'<button class="btn btn-ghost btn-sm" id="copyAll">Copy all codes</button><button class="btn btn-ghost btn-sm" id="clearAll" style="box-shadow:inset 0 0 0 1.5px var(--flag);color:var(--flag-dark)">Clear all</button>':"")+'</div>'+
+        '<div class="divider"></div>'+list+'</div>'+
+      '<div class="card"><div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><h2 style="margin:0">Enter results</h2>'+(w[CHAMP]?'<span class="pill pill-final">\u2605 Champion: '+esc(w[CHAMP])+'</span>':"")+'</div>'+
+        '<p class="lead">Tap the actual winner of each match as the putting plays out'+(META.games>0?" \u2014 start with the play-in":"")+'. Standings re-score instantly.</p>'+
+        renderBracket(results.winners,"org")+
+        '<div style="margin-top:12px"><button class="btn btn-ghost btn-sm" id="clearResults">Clear results</button></div></div>'+
+      '<div class="card"><h2>Leaderboard</h2>'+lb+
+        '<div class="muted" style="margin-top:14px">Scoring: '+(CONFIG.weighted?"play-in 1, Round of "+META.B+" 1, quarters 2, semis 4, final 8":"flat \u2014 1 point per correct pick")+'.</div>'+
+        '<div style="margin-top:14px"><button class="btn btn-ghost btn-sm" id="backPlay2">Back to picking screen</button></div></div>';
+  }
+
+  /* ---------- paint + events ---------- */
+  function paint(){ app.innerHTML = mode==="org" ? (orgUnlocked?viewOrg():viewOrgGate()) : viewPlay(); bind(); }
+
+  function bind(){
+    const gear=document.getElementById("gear"); if(gear) gear.onclick=()=>{ mode="org"; paint(); };
+
+    if(mode==="play"){
+      const nm=document.getElementById("pname");
+      if(nm) nm.oninput=e=>{ myName=e.target.value; lsSet(LS.myname,myName); const ready=myName.trim()&&pickCount(myPicks)===total(); if(ready!==!!document.getElementById("mycode")) paint(); };
+      app.querySelectorAll('.slot[data-pick]').forEach(s=>s.onclick=()=>{ const id=s.dataset.pick,n=s.dataset.name; if(!n) return; myPicks[id]=n; validate(myPicks); lsSet(LS.mypicks,myPicks); paint(); });
+      const cc=document.getElementById("copyCode"); if(cc) cc.onclick=()=>{ copy(document.getElementById("mycode").textContent); toast("Code copied \u2014 send it in!"); };
+      const so=document.getElementById("startOver"); if(so) so.onclick=()=>{ myPicks={}; lsSet(LS.mypicks,myPicks); paint(); };
+    }
+
+    if(mode==="org" && !orgUnlocked){
+      const b=document.getElementById("ocBtn"); if(b) b.onclick=()=>{ if((document.getElementById("oc").value||"")===CONFIG.passcode){ orgUnlocked=true; paint(); } else document.getElementById("ocErr").textContent="That code doesn't match."; };
+      const bp=document.getElementById("backPlay"); if(bp) bp.onclick=()=>{ mode="play"; paint(); };
+    }
+
+    if(mode==="org" && orgUnlocked){
+      const lc=document.getElementById("loadCodes"); if(lc) lc.onclick=loadCodes;
+      const ca=document.getElementById("copyAll"); if(ca) ca.onclick=()=>{ copy(entries.map(e=>encodeEntry(e.name,e.picks)).join("\n")); toast("All codes copied"); };
+      const cl=document.getElementById("clearAll"); if(cl) cl.onclick=()=>{ if(confirm("Remove all loaded brackets?")){ entries=[]; lsSet(LS.entries,entries); paint(); } };
+      app.querySelectorAll('[data-del]').forEach(x=>x.onclick=()=>{ entries.splice(+x.dataset.del,1); lsSet(LS.entries,entries); paint(); });
+      app.querySelectorAll('.slot[data-pick]').forEach(s=>s.onclick=()=>{ const id=s.dataset.pick,n=s.dataset.name; if(!n) return; results.winners[id]=n; validate(results.winners); lsSet(LS.results,results); paint(); });
+      const cr=document.getElementById("clearResults"); if(cr) cr.onclick=()=>{ if(confirm("Clear all entered results?")){ results={winners:{}}; lsSet(LS.results,results); paint(); } };
+      const bp=document.getElementById("backPlay2"); if(bp) bp.onclick=()=>{ mode="play"; paint(); };
+    }
+  }
+
+  function loadCodes(){
+    const raw=(document.getElementById("codes").value||"").split("\n").map(s=>s.trim()).filter(Boolean);
+    let ok=0,bad=0;
+    raw.forEach(c=>{ try{ const e=decodeEntry(c); const i=entries.findIndex(x=>x.name.toLowerCase()===e.name.toLowerCase()); if(i>=0) entries[i]=e; else entries.push(e); ok++; }catch(err){ bad++; } });
+    lsSet(LS.entries,entries); toast(ok+" loaded"+(bad?", "+bad+" couldn't be read":"")); paint();
+  }
+
+  function copy(t){ if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(t).catch(()=>fc(t)); } else fc(t); }
+  function fc(t){ const ta=document.createElement("textarea"); ta.value=t; document.body.appendChild(ta); ta.select(); try{document.execCommand("copy");}catch(e){} document.body.removeChild(ta); }
+  let tt; function toast(m){ const t=document.getElementById("toast"); t.textContent=m; t.classList.add("show"); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove("show"),2200); }
+
+  paint();
+})();
+</script>
+</body>
+</html>
